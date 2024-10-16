@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs')
+// const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { v4: uuid } = require("uuid")
 const fs = require('fs')
@@ -30,10 +30,10 @@ const registerUser = async (req, res, next) => {
             return next(new HttpError("Passwords do not match.", 422))
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPass = await bcrypt.hash(password, salt);
+        // const salt = await bcrypt.genSalt(10);
+        // const hashedPass = await bcrypt.hash(password, salt);
         // don't send new user as response to frontend
-        const newUser = await User.create({name, email: newEmail, password: hashedPass});
+        const newUser = await User.create({name, email: newEmail, password: password});
         res.status(201).json(`New user ${newUser.email} registered.`);
     } catch (error) {
         return next(new HttpError("User registration failed.", 422))
@@ -66,7 +66,7 @@ const loginUser = async (req, res, next) => {
             return next(new HttpError("Invalid Credentials.", 422))
         }
 
-        const comparePass = await bcrypt.compare(password, user.password);
+        // const comparePass = await bcrypt.compare(password, user.password);
         if(!comparePass) {
             return next(new HttpError("Invalid credentials.", 422))
         }
@@ -181,7 +181,7 @@ const editUser = async (req, res, next) => {
         }
 
         // compare current password to db password
-        const validateUserPassword = await bcrypt.compare(currentPassword, user.password);
+        // const validateUserPassword = await bcrypt.compare(currentPassword, user.password);
         if(!validateUserPassword) {
             return next(new HttpError("Invalid current password."))
         }
@@ -192,8 +192,8 @@ const editUser = async (req, res, next) => {
         }
 
         // hash new password
-        const newSalt = await bcrypt.genSalt(10);
-        const newHash = await bcrypt.hash(newPassword, newSalt)
+        // const newSalt = await bcrypt.genSalt(10);
+        // const newHash = await bcrypt.hash(newPassword, newSalt)
         
         // update user info in database
         const newInfo = await User.findByIdAndUpdate(req.user.id, {name, email, password: newHash}, {new: true})
