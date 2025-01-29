@@ -20,7 +20,6 @@ const Dashboard = () => {
         navigate('/login')
         }
     }, [])
-
     useEffect(() => {
         const fetchPosts = async () => {
             setIsLoading(true)
@@ -59,17 +58,18 @@ const Dashboard = () => {
     <section className="dashboard">
         {posts.length ? <div className="container dashboard__container">
             {posts.map(post => {
-                return <article key={post._id} className="dashboard__post">
+                const imageData = `data:image/png;base64,${post.base64String}`;
+                return <article key={post._doc._id} className="dashboard__post">
                         <div className='dashboard__post-info'>
                             <div className="dashboard__post-thumbnail">
-                                <img src={`${process.env.REACT_APP_ASSET_URL}/uploads/${post.thumbnail}`} alt="" />
+                                <img src={imageData} alt="Fetched from MongoDB" />
                             </div>
-                            <h5>{post.title}</h5>
+                            <h5>{post._doc.title}</h5>
                         </div>
                         <div className="dashboard__post-actions">
-                            <Link to={`/posts/${post._id}`} className='btn sm'>View</Link>
-                            <Link to={`/posts/${post._id}/edit`} className='btn primary sm'>Edit</Link>
-                            <Link onClick={() => removePost(post._id)} className='btn danger sm'>Delete</Link>
+                            <Link to={`/posts/${post._doc._id}`} className='btn sm'>View</Link>
+                            <Link to={`/posts/${post._doc._id}/edit`} className='btn primary sm'>Edit</Link>
+                            <Link onClick={() => removePost(post._doc._id)} className='btn danger sm'>Delete</Link>
                         </div>
                     </article>
                 })

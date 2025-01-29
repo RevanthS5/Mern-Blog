@@ -9,6 +9,7 @@ import Loader from '../components/Loader'
 const PostDetail = () => {
     const {id} = useParams()
     const [post, setPost] = useState(null);
+    const [imageData, setImageData] = useState(null);
     const [creatorID, setCreatorID] = useState(null)
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false);
@@ -24,8 +25,11 @@ const PostDetail = () => {
             setIsLoading(true)
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/posts/${id}`)
-                setPost(response.data);
-                setCreatorID(response.data.creator)
+                setPost(response.data._doc);
+                setCreatorID(response.data._doc.creator);
+                console.log('creatorID', response.data._doc)
+                    const imageData = `data:image/png;base64,${response.data.base64String}`;
+                    setImageData(imageData);
             } catch (error) {
                 console.log(error)
             }
@@ -35,7 +39,7 @@ const PostDetail = () => {
     }, [])
 
 
-
+    console.log('creatorID', creatorID)
     if(isLoading) {
         return <Loader/>
     }
@@ -48,8 +52,6 @@ const PostDetail = () => {
 
         navigate('/')
     }
-    
-
 
   return (
     <section className='post-detail'>
@@ -64,7 +66,7 @@ const PostDetail = () => {
             </div>
             <h1>{post?.title}</h1>
             <div className="post-detail__thumbnail">
-                <img src={`${process.env.REACT_APP_ASSET_URL}/uploads/${post?.thumbnail}`} alt="" />
+                {imageData &&  <img src={imageData} alt="Fetched from MongoDB" /> }
             </div>
             <p dangerouslySetInnerHTML={{__html: post?.description}}/>
         </div>}

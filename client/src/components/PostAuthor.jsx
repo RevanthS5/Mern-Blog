@@ -13,30 +13,34 @@ TimeAgo.addLocale(ru)
 
 
 
-const PostAuthor = ({authorID, createdAt}) => {
+const PostAuthor = ({authorID, createdAt, imageDataTrail}) => {
+
+
     const [author, setAuthor] = useState({})
-    
+    const [pic, setPic] = useState('Loading')
+        // const imageData = `${author?.profilePicture}`
+        // const imageData2 = `data:image/jpg;base64,${author?.base64String}`
     useEffect(() => {
         const getAuthor = async () => {
             try {
                 const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/${authorID}`)
                 setAuthor(response?.data)
+                setPic(`data:image/jpg;base64,${response?.data?.base64String}`)
             } catch (error) {
                 console.log(error)
             }
         }
-
         getAuthor();
     }, [])
-
+    console.log('pic', pic)
 
     return (
         <Link to={`/posts/users/${authorID}`} className="post__author">
             <div className="post__author-avatar">
-                <img src={`${process.env.REACT_APP_ASSET_URL}/uploads/${author?.avatar}`} alt="" />
+                {pic !== 'Loading' && <img src={pic} alt="Fetch" />}
             </div>
             <div className="post__author-details">
-                <h5>By: {author?.name}</h5>
+                <h5>By: {author?._doc?.name}</h5>
                 <small><ReactTimeAgo date={new Date(createdAt)} locale="en-US" /></small>
             </div>
         </Link>

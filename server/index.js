@@ -12,9 +12,13 @@ const {notFound, errorHandler} = require('./middleware/errorMiddleware')
 const app = express();
 app.use(express.json({extended: true}))
 app.use(express.urlencoded({extended: true}))
-app.use(cors({credentials: true, origin: 'http://localhost:3000'}))
+const corsOptions = {
+    origin:'http://localhost:3000', 
+    credentials:true,            //access-control-allow-credentials:true
+    optionSuccessStatus:200
+}
+app.use(cors(corsOptions));
 app.use(upload())
-app.use('/uploads', express.static(__dirname + '/uploads'))
 
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);

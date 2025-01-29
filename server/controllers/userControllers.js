@@ -10,7 +10,7 @@ const HttpError = require('../models/errorModel');
 
 const registerUser = async (req, res, next) => {
     try {
-        const {name, email, password, password2} = req.body;
+        const {name, email, password, password2, profilePicture} = req.body;
         if(!name || !email || !password) {
             return next(new HttpError("Fill in all fields.", 422))
         }
@@ -29,11 +29,7 @@ const registerUser = async (req, res, next) => {
         if(password != password2) {
             return next(new HttpError("Passwords do not match.", 422))
         }
-
-        // const salt = await bcrypt.genSalt(10);
-        // const hashedPass = await bcrypt.hash(password, salt);
-        // don't send new user as response to frontend
-        const newUser = await User.create({name, email: newEmail, password: password});
+        const newUser = await User.create({name, email: newEmail, password: password, profilePicture: profilePicture});
         res.status(201).json(`New user ${newUser.email} registered.`);
     } catch (error) {
         return next(new HttpError("User registration failed.", 422))
@@ -49,9 +45,6 @@ const generateToken = (payload) => {
     return token;
 }
 
-
-
-
 const loginUser = async (req, res, next) => {
     try {
         const {email, password} = req.body;
@@ -66,11 +59,6 @@ const loginUser = async (req, res, next) => {
             return next(new HttpError("Invalid Credentials.", 422))
         }
 
-        // const comparePass = await bcrypt.compare(password, user.password);
-        if(!comparePass) {
-            return next(new HttpError("Invalid credentials.", 422))
-        }
-
         const {_id: id, name} = user;
         const token = generateToken({id, name})
         
@@ -81,9 +69,6 @@ const loginUser = async (req, res, next) => {
 }
 
 
-
-
-
 // for profile page
 const getUser = async (req, res, next) => {
     const {id} = req.params;
@@ -92,25 +77,25 @@ const getUser = async (req, res, next) => {
         if(!user) {
             return next(new HttpError("User not found.", 404))
         }
-        res.status(200).json(user);
+        else{
+            const finalUserObj = base64decoder(user);
+            res.status(200).json(finalUserObj);
+        }
     } catch (error) {
-        return next(new HttpError(error))
+        return next(new HttpError(finalUserObj))
     }
 }
 
-
-
-
-
+const base64decoder = (userObj) => {
+    const base64String = userObj.profilePicture.toString("base64");
+    const user = {...userObj, base64String: base64String}
+    return user;
+}
 
 const logoutUser = (req, res, next) => {
     res.cookie('token', '', {httpOnly: true, expires: new Date(0)})
     res.status(200).json('User Logged out')
 }
-
-
-
-
 
 // Change user profile picture
 const changeAvatar = async (req, res, next) => {
@@ -150,15 +135,6 @@ const changeAvatar = async (req, res, next) => {
         return next(new HttpError(error))
     }
 }
-
-
-
-
-
-
-
-
-
 
 // function to update current user details fromm User Profile
 const editUser = async (req, res, next) => {

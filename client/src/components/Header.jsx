@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {FaBars} from "react-icons/fa"
 import {AiOutlineClose} from "react-icons/ai"
-
 import Logo from '../images/logo.png'
 import {UserContext} from '../context/userContext'
 
@@ -21,7 +20,7 @@ const Header = () => {
     }
 
   return (
-    <nav>
+    <nav className='nabar_wrapper'>
         <div className="container nav__container">
             <Link to="/" className='nav__logo' onClick={closeNavHandler}>
               <img src={Logo} alt="Navbar Logo" />

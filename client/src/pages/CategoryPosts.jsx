@@ -23,18 +23,16 @@ const CategoryPosts = () => {
         fetchPosts();
     }, [category])
 
-
     if(isLoading) {
         return <Loader/>
     }
-
 
     return (
     <section className="category-posts">
         {posts.length ? <div className="container posts__container">
             {
-                posts.map(({_id:id, thumbnail, category, title, description, creator, createdAt}) => {
-                    return <PostItem key={id} postID={id} thumbnail={thumbnail} category={category} title={title} description={description} authorID={creator} createdAt={createdAt}/>
+                posts.map((element) => {
+                    return <PostItem key={element._doc._id} postID={element._doc._id} thumbnail={element.base64String} category={element._doc.category} title={element._doc.title} description={element._doc.description} authorID={element._doc.creator} createdAt={element._doc.createdAt} thumbnailImage={element.base64String}/>
                 })
             }
         </div>  : <h2 className="center">No Posts found for {category}.</h2>}

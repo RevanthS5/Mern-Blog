@@ -38,6 +38,7 @@ const UserProfile = () => {
         const getUser = async () => {
             const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/${id}`, {withCredentials: true, headers: {Authorization: `Bearer ${token}`}})
             const {name, email, avatar} = response.data
+            console.log('response', response)
             setName(name)
             setEmail(email)
             setAvatar(avatar)

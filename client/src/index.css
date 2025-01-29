@@ -42,12 +42,6 @@ body {
   color: var(--color-gray-700);
 }
 
-
-
-
-
-
-
 a {
   color: var(--color-gray-700);
   text-decoration: none;
@@ -98,13 +92,6 @@ img {
   width: var(--container-width-lg);
   margin-inline: auto;
 }
-
-
-
-
-
-
-
 
 .btn {
   display: inline-block;
@@ -227,12 +214,14 @@ nav {
   height: 5rem;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.5);
+  /* background: rgba(255, 255, 255, 0.5); */
+  background: var(--color-gray-900);
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1;
   border-bottom: 4px solid var(--color-bg);
+  opacity: .90;
   backdrop-filter: blur(20px);
 }
 
@@ -244,7 +233,7 @@ nav {
 }
 
 .nav__logo {
-  width: 2.6rem;
+  width: 3.6rem;
 }
 
 .nav__menu {
@@ -253,18 +242,24 @@ nav {
   gap: 3rem;
 }
 
+  /* Trail */
+
+.nav__menu li a{
+  background: var(--color-gray-700);
+  color: var(--color-white);
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-2);
+  transition: var(--transition);
+}
+
+.nav__menu li a:hover {
+  background: var(--color-white);
+  color: var(--color-gray-900);
+}
+
 .nav__toggle-btn {
   display: none;
 }
-
-
-
-
-
-
-
-
-
 
 /*======================== HOME ========================*/
 /*======================== Posts ========================*/
@@ -321,11 +316,34 @@ nav {
   overflow: hidden;
 }
 
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1rem;
+}
 
+.pagination button {
+  width: 40px;
+  height: 40px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: transparent;
+  color: var(--color-gray-500);
+  border-color: #eee;
+}
 
-
-
-
+.pagination button.active {
+  font-weight: 900;
+  border-color: #101010;
+  background: var(--color-primary);
+  color: var(--color-white);
+}
 
 /*======================== LOADER ========================*/
 .loader {
@@ -343,14 +361,6 @@ nav {
   width: 4.5rem;
   height: 4.5rem;
 }
-
-
-
-
-
-
-
-
 
 /*======================== POST DETAILS ========================*/
 .post-detail {
@@ -382,16 +392,6 @@ nav {
 .post-detail__container p {
   margin-bottom: 0.7rem;
 }
-
-
-
-
-
-
-
-
-
-
 
 /*======================== FOOTER ========================*/
 footer {

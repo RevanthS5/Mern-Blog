@@ -5,7 +5,7 @@ const fs = require('fs')
 const { v4: uuid } = require("uuid")
 const HttpError = require('../models/errorModel')
 const { mongoose } = require('mongoose')
-
+const buffer =  require('base64-arraybuffer');
 
 
 //============================== CREATE NEW POST
@@ -17,8 +17,8 @@ const createPost = async (req, res, next) => {
         if(!title || !category || !description || !req.files) {
             return next(new HttpError("Fill in all fields and choose thumbnail.", 422))
         }
-        
         const {thumbnail} = req.files;
+                const imageBuffer = Buffer.from(thumbnail.data, "base64");
         // check file size
         if(thumbnail.size > 2000000) {
             return next(new HttpError("Thumbnail too big. File size should be less than 2mb"))
@@ -32,7 +32,7 @@ const createPost = async (req, res, next) => {
             if(err) {
                 return next(new HttpError(err))
             } else {
-                const newPost = await Post.create({title, category, description, thumbnail: newFilename, creator: req.user.id});
+                const newPost = await Post.create({title, category, description, thumbnail: newFilename, creator: req.user.id, thumbnailImage: imageBuffer});
                 if(!newPost) {
                     return next(new HttpError("Something went wrong.", 422))
                 }
@@ -49,7 +49,15 @@ const createPost = async (req, res, next) => {
     }
 }
 
-
+//============================== Middleware function to decode the image
+const decodeImage =  (posts) => {
+    const transformedPosts = posts.map((post) => {
+        const base64String = buffer.encode(post.thumbnailImage);
+        newPost = {...post, base64String: base64String}
+        return newPost
+    })
+    return transformedPosts
+}
 
 
 //============================== GET ALL POSTS
@@ -58,13 +66,18 @@ const createPost = async (req, res, next) => {
 const getPosts = async (req, res, next) => {
     try {
         const posts = await Post.find().sort({updatedAt: -1});
-        res.status(200).json(posts);
+        const transformedPosts = decodeImage(posts)
+        res.status(200).json(transformedPosts);
     } catch (error) {
         return next(new HttpError(error))
     }
 }
 
-
+const decodeImageForSinglePost =  (post) => {
+        const base64String = buffer.encode(post.thumbnailImage);
+        newPost = {...post, base64String: base64String}
+    return newPost
+}
 
 
 //============================== GET SINGLE POSTS
@@ -77,7 +90,8 @@ const getPost = async (req, res, next) => {
         if(!post) {
             return next(new HttpError("Post not found.", 404))
         }
-        res.status(200).json(post);
+        const transformedPost = decodeImageForSinglePost(post)
+        res.status(200).json(transformedPost);
     } catch (error) {
         return next(new HttpError(error));
     }
@@ -91,7 +105,8 @@ const getCatPosts = async (req, res, next) => {
     try {
         const {category} = req.params;
         const catPosts = await Post.find({category}).sort({createdAt: -1})
-        res.json(catPosts)
+        const transformedPosts = decodeImage(catPosts);
+        res.json(transformedPosts)
     } catch (error) {
         return next(new HttpError(error))
     }
@@ -105,7 +120,8 @@ const getUserPosts = async (req, res, next) => {
     const {id} = req.params;
     try {
         const posts = await Post.find({creator: id}).sort({createdAt: -1})
-        res.json(posts)
+        const transformedPosts = decodeImage(posts);
+        res.json(transformedPosts)
     } catch (error) {
         return next(new HttpError(error))
     }
