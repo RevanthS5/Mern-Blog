@@ -21,6 +21,7 @@ const Login = () => {
         e.preventDefault();
         setError('')
         try {
+            console.log('userData', userData)
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/users/login`, userData);
             const user = await response.data;
             if(!user) {

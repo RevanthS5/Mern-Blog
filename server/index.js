@@ -23,6 +23,8 @@ app.use(upload())
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 
+
+
 app.use(notFound)
 app.use(errorHandler)
 

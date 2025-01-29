@@ -45,10 +45,14 @@ const generateToken = (payload) => {
     return token;
 }
 
+console.log('Outter Test')
+
 const loginUser = async (req, res, next) => {
+    console.log('req', req)
     try {
         const {email, password} = req.body;
         if(!email || !password) {
+            console.log('Here',email, password)
             return next(new HttpError("Fill in all fields.", 422))
         }
 
@@ -64,10 +68,10 @@ const loginUser = async (req, res, next) => {
         
         res.status(200).json({token, id, name})
     } catch (error) {
+        console.log('error', error)
         return next(new HttpError("Login failed. Please check your credentials.", 422))
     }
 }
-
 
 // for profile page
 const getUser = async (req, res, next) => {
