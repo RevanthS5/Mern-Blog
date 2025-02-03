@@ -12,8 +12,15 @@ const {notFound, errorHandler} = require('./middleware/errorMiddleware')
 const app = express();
 app.use(express.json({extended: true}))
 app.use(express.urlencoded({extended: true}))
+const allowedOrigins = ["http://localhost:3000", "https://your-frontend.vercel.app"];
 const corsOptions = {
-    origin: process.env.FRONTEND_URI, 
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
     credentials:true,            //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
