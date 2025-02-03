@@ -18,8 +18,6 @@ const PostAuthor = ({authorID, createdAt, imageDataTrail}) => {
 
     const [author, setAuthor] = useState({})
     const [pic, setPic] = useState('Loading')
-        // const imageData = `${author?.profilePicture}`
-        // const imageData2 = `data:image/jpg;base64,${author?.base64String}`
     useEffect(() => {
         const getAuthor = async () => {
             try {
@@ -32,7 +30,6 @@ const PostAuthor = ({authorID, createdAt, imageDataTrail}) => {
         }
         getAuthor();
     }, [])
-    console.log('pic', pic)
 
     return (
         <Link to={`/posts/users/${authorID}`} className="post__author">
