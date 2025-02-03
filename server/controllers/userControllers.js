@@ -51,6 +51,7 @@ const loginUser = async (req, res, next) => {
     console.log('req', req)
     try {
         const {email, password} = req.body;
+        console.log('In try');
         if(!email || !password) {
             console.log('Here',email, password)
             return next(new HttpError("Fill in all fields.", 422))
@@ -59,13 +60,16 @@ const loginUser = async (req, res, next) => {
         const newEmail = email.toLowerCase()
 
         const user = await User.findOne({email: newEmail});
+        console.log('In User');
         if(!user) {
+            console.log('No user');
             return next(new HttpError("Invalid Credentials.", 422))
         }
 
         const {_id: id, name} = user;
         const token = generateToken({id, name})
-        
+        console.log('Id name', user);
+        console.log('token', token)
         res.status(200).json({token, id, name})
     } catch (error) {
         console.log('error', error)
