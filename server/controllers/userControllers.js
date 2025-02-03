@@ -67,6 +67,8 @@ const loginUser = async (req, res, next) => {
         }
 
         const {_id: id, name} = user;
+        console.log('before token generation');
+        console.log('JWT_SECRET',process.env.JWT_SECRET);
         const token = generateToken({id, name})
         console.log('Id name', user);
         console.log('token', token)
