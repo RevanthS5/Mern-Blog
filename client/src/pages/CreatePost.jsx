@@ -53,6 +53,7 @@ const CreatePost = () => {
         };
         reader.readAsDataURL(file);
       };
+      
     const createPost = async (e) => {
         e.preventDefault();
 

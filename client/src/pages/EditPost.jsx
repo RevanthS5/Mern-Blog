@@ -10,6 +10,7 @@ const EditPost = () => {
     const [category, setCategory] = useState('Uncategorized')
     const [description, setDescription] = useState('')
     const [thumbnail, setThumbnail] = useState('')
+    const [thumbnailImage, setThumbnailImage] = useState('')
     const [error, setError] = useState('')
 
     const params = useParams()
@@ -41,7 +42,7 @@ const EditPost = () => {
     'link', 'image'
     ]
 
-    const POST_CATEGORIES = ["Agriculture", "Business", "Education", "Entertainment", "Art", "Investment", "Uncategorized", "Weather"]
+    const POST_CATEGORIES = ["Deserts", "Healthy", "Indian", "Italian", "Vegan", "Easy", "Uncategorized", "Baking"]
 
 
     useEffect(() => {
@@ -61,6 +62,15 @@ const EditPost = () => {
     }, [])
 
 
+    const handleFileSelect = (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const image = reader.result.split(",")[1];
+          setThumbnailImage(image);
+        };
+        reader.readAsDataURL(file);
+      };
 
     const EditPost = async (e) => {
         e.preventDefault();
@@ -69,7 +79,9 @@ const EditPost = () => {
         postData.set('title', title);
         postData.set('category', category);
         postData.set('description', description);
-        postData.set('thumbnail', thumbnail)
+        postData.set('thumbnail', thumbnail);
+        postData.set('thumbnailImage', thumbnailImage)
+
 
         try {
             const response = await axios.patch(`${process.env.REACT_APP_BASE_URL}/posts/${params.id}`, postData, {withCredentials: true, headers: {Authorization: `Bearer ${token}`}})
@@ -103,7 +115,7 @@ const EditPost = () => {
                         }
                     </select>
                     <ReactQuill modules={modules} formats={formats} value={description} onChange={setDescription}></ReactQuill>
-                    <input type="file" onChange={e => setThumbnail(e.target.files[0])} accept="png, jpg, jpeg" />
+                    <input type="file" onChange={e => {setThumbnail(e.target.files[0]); handleFileSelect(e)}} accept="png, jpg, jpeg" />
                     <button type="submit" className='btn primary'>Update</button>
                 </form>
             </div>
