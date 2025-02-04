@@ -89,6 +89,7 @@ const EditPost = () => {
                 return navigate('/')
             }
         } catch (err) {
+            console.log('error', error)
             if(err.response.data.message === "TypeError: Cannot read properties of null (reading 'thumbnail')") {
                 setError("Please choose a thumbnail")
             } else {
