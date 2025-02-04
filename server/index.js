@@ -12,7 +12,7 @@ const {notFound, errorHandler} = require('./middleware/errorMiddleware')
 const app = express();
 app.use(express.json({extended: true}))
 app.use(express.urlencoded({extended: true}))
-const allowedOrigins = ["http://localhost:3000", "https://your-frontend.vercel.app"];
+const allowedOrigins = ["http://localhost:3000", "https://savornshare.vercel.app"]; 
 const corsOptions = {
     origin: function (origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
