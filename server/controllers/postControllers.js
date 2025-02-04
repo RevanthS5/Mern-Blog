@@ -23,28 +23,53 @@ const createPost = async (req, res, next) => {
         if(thumbnail.size > 2000000) {
             return next(new HttpError("Thumbnail too big. File size should be less than 2mb"))
         }
-        
-        let fileName;
-        fileName = thumbnail.name;
-        let splittedFilename = fileName.split('.')
-        let newFilename = splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1]
-        thumbnail.mv(path.join(__dirname, '..', 'uploads', newFilename), async (err) => {
-            if(err) {
-                return next(new HttpError(err))
-            } else {
-                const newPost = await Post.create({title, category, description, thumbnail: newFilename, creator: req.user.id, thumbnailImage: imageBuffer});
-                if(!newPost) {
-                    return next(new HttpError("Something went wrong.", 422))
-                }
-                // Find user and increase posts count by 1
-                const currentUser = await User.findById(req.user.id)
-                const userPostCount = currentUser?.posts + 1;
-                await User.findByIdAndUpdate(req.user.id, {posts: userPostCount})
 
-                res.status(201).json(newPost)
-            }
-        })
+        // Generate a new filename
+        let fileName = thumbnail.name;
+        let newFilename = fileName.split(".")[0] + uuid() + "." + fileName.split(".").pop();
+        
+        // Save the file to Vercel's `/tmp` directory
+        const filePath = path.join("/tmp", newFilename);
+        await thumbnail.mv(filePath);
+
+        // Convert image to Base64 (to store in MongoDB)
+
+                // Save post in MongoDB
+                const newPost = await Post.create({
+                    title,
+                    category,
+                    description,
+                    creator: req.user.id,
+                    thumbnailImage: imageBuffer, // Store image as buffer
+                });
+        
+                if (!newPost) {
+                    return next(new HttpError("Something went wrong.", 422));
+                }
+        
+                // Delete the temporary file after saving to MongoDB
+                fs.unlinkSync(filePath);
+        
+                res.status(201).json(newPost);
+
+        // thumbnail.mv(path.join(__dirname, '..', 'uploads', newFilename), async (err) => {
+        //     if(err) {
+        //         return next(new HttpError(err))
+        //     } else {
+        //         const newPost = await Post.create({title, category, description, creator: req.user.id, thumbnailImage: imageBuffer});
+        //         if(!newPost) {
+        //             return next(new HttpError("Something went wrong.", 422))
+        //         }
+        //         // Find user and increase posts count by 1
+        //         const currentUser = await User.findById(req.user.id)
+        //         const userPostCount = currentUser?.posts + 1;
+        //         await User.findByIdAndUpdate(req.user.id, {posts: userPostCount})
+
+        //         res.status(201).json(newPost)
+        //     }
+        // })
     } catch (error) {
+        console.log('Image upload fail')
         return next(new HttpError(error))
     }
 }
