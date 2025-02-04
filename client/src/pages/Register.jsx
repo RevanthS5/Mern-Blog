@@ -63,7 +63,7 @@ const Register = () => {
                     <input type="email" placeholder='Email' name="email" value={userData.email} onChange={changeInputHandler} />
                     <input type="password" placeholder='Password' name="password" value={userData.password} onChange={changeInputHandler} />
                     <input type="password" placeholder='Confirm Password' name="password2" value={userData.password2} onChange={changeInputHandler} />
-                    <input type='file' placeholder='Upload Profile Picture' onChange={e => {setProfilePicture(e.target.files[0]); handleFileSelect(e)}}  accept="png, jpg, jpeg" /> 
+                    {/* <input type='file' placeholder='Upload Profile Picture' onChange={e => {setProfilePicture(e.target.files[0]); handleFileSelect(e)}}  accept="png, jpg, jpeg" />  */}
                     <button type="submit" className='btn primary'>Register</button>
                 </form>
                 <small>Already have an account? <Link to="/login">sign in</Link></small>
