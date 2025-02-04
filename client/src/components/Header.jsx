@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {FaBars} from "react-icons/fa"
 import {AiOutlineClose} from "react-icons/ai"
-import Logo from '../images/logo.png'
+import Logo from '../images/logo_text_bg.png'
 import {UserContext} from '../context/userContext'
 
 
