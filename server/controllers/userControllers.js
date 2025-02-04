@@ -80,8 +80,7 @@ const getUser = async (req, res, next) => {
             res.status(200).json(finalUserObj);
         }
     } catch (error) {
-        return next(new HttpError(finalUserObj))
-    }
+        return next(new HttpError(error.message || "Something went wrong", 500));    }
 }
 
 const base64decoder = (userObj) => {
