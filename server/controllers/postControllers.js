@@ -159,63 +159,137 @@ const getUserPosts = async (req, res, next) => {
 //============================== EDIT POST
 // PATCH : api/posts/:id
 // PROTECTED
+// const editPost = async (req, res, next) => {
+//     let fileName;
+//     let newFilename;
+//     let updatedPost
+//     try {
+//         const postID = req.params.id;
+//         let {title, category, description} = req.body;
+//         // ReactQuill has a paragraph opening and closing tag with a break tag in between so there are 11 characters in there already. That's why 12 
+//         if(!title || !category || description.length < 12) {
+//             return next(new HttpError("Fill all fields", 422))
+//         }
+        
+//         // get old post from db
+//         const oldPost = await Post.findById(postID);
+
+//         if(req.user.id == oldPost.creator) {
+//             // update post without thumbnail
+//             if(!req.files) {
+//                 updatedPost = await Post.findByIdAndUpdate(postID, {title, category, description}, {new: true})
+//             } else {
+//                 // delete old thumbnail from uploads
+//                 fs.unlink(path.join(__dirname, '..', 'uploads', oldPost.thumbnail), async (err) => {
+//                 if (err) {
+//                     return next(new HttpError(err))
+//                 }})
+                
+//                 // upload new thumbnail
+//                 const {thumbnail} = req.files;
+//                 // check file size
+//                 if(thumbnail.size > 2000000) {
+//                     return next(new HttpError("Thumbnail too big. Should be less than 2mb"))
+//                 }
+//                 fileName = thumbnail.name;
+//                 let splittedFilename = fileName.split('.')
+//                 newFilename = splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1]
+//                 thumbnail.mv(path.join(__dirname, '..', 'uploads', newFilename), async (err) => {
+//                     if(err) {
+//                         return next(new HttpError(err))
+//                     }
+//                 })
+        
+//                 updatedPost = await Post.findByIdAndUpdate(postID, {title, category, description, thumbnail: newFilename}, {new: true})
+//             }
+//         } else {
+//             return next(new HttpError("Couldn't update post.", 403))
+//         }
+
+//         if(!updatedPost) {
+//             return next(new HttpError("Couldn't update post", 400))
+//         }
+//         res.json(updatedPost)
+
+//     } catch (error) {
+//         return next(new HttpError(error))
+//     }
+// }
+
+
 const editPost = async (req, res, next) => {
-    let fileName;
-    let newFilename;
-    let updatedPost
     try {
         const postID = req.params.id;
-        let {title, category, description} = req.body;
-        // ReactQuill has a paragraph opening and closing tag with a break tag in between so there are 11 characters in there already. That's why 12 
-        if(!title || !category || description.length < 12) {
-            return next(new HttpError("Fill all fields", 422))
+        let { title, category, description } = req.body;
+
+        if (!title || !category || description.length < 12) {
+            return next(new HttpError("Fill all fields", 422));
         }
-        
-        // get old post from db
+
+        // Get the old post from the database
         const oldPost = await Post.findById(postID);
+        if (!oldPost) {
+            return next(new HttpError("Post not found", 404));
+        }
 
-        if(req.user.id == oldPost.creator) {
-            // update post without thumbnail
-            if(!req.files) {
-                updatedPost = await Post.findByIdAndUpdate(postID, {title, category, description}, {new: true})
-            } else {
-                // delete old thumbnail from uploads
-                fs.unlink(path.join(__dirname, '..', 'uploads', oldPost.thumbnail), async (err) => {
-                if (err) {
-                    return next(new HttpError(err))
-                }})
-                
-                // upload new thumbnail
-                const {thumbnail} = req.files;
-                // check file size
-                if(thumbnail.size > 2000000) {
-                    return next(new HttpError("Thumbnail too big. Should be less than 2mb"))
-                }
-                fileName = thumbnail.name;
-                let splittedFilename = fileName.split('.')
-                newFilename = splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1]
-                thumbnail.mv(path.join(__dirname, '..', 'uploads', newFilename), async (err) => {
-                    if(err) {
-                        return next(new HttpError(err))
-                    }
-                })
-        
-                updatedPost = await Post.findByIdAndUpdate(postID, {title, category, description, thumbnail: newFilename}, {new: true})
-            }
+        // Check if the logged-in user is the owner of the post
+        if (req.user.id !== oldPost.creator.toString()) {
+            return next(new HttpError("Unauthorized to update this post.", 403));
+        }
+
+        let updatedPost;
+
+        // ✅ If there's NO new thumbnail, update text fields only
+        if (!req.files) {
+            updatedPost = await Post.findByIdAndUpdate(
+                postID,
+                { title, category, description },
+                { new: true }
+            );
         } else {
-            return next(new HttpError("Couldn't update post.", 403))
+            // ✅ Delete old thumbnail if exists (from MongoDB, not filesystem)
+            oldPost.thumbnailImage = null;
+
+            // ✅ Upload new thumbnail
+            const { thumbnail } = req.files;
+
+            // Check file size
+            if (thumbnail.size > 2000000) {
+                return next(new HttpError("Thumbnail too big. Should be less than 2MB"));
+            }
+
+            // Generate a new filename
+            let fileName = thumbnail.name;
+            let newFilename =
+                fileName.split(".")[0] + uuid() + "." + fileName.split(".").pop();
+
+            // ✅ Save the file to Vercel's `/tmp/` directory
+            const filePath = path.join("/tmp", newFilename);
+            await thumbnail.mv(filePath);
+
+            // Convert image to Buffer (for MongoDB)
+            const imageBuffer = fs.readFileSync(filePath);
+
+            // ✅ Update the post with the new thumbnail
+            updatedPost = await Post.findByIdAndUpdate(
+                postID,
+                { title, category, description, thumbnailImage: imageBuffer },
+                { new: true }
+            );
+
+            // ✅ Delete the temporary file after saving
+            fs.unlinkSync(filePath);
         }
 
-        if(!updatedPost) {
-            return next(new HttpError("Couldn't update post", 400))
+        if (!updatedPost) {
+            return next(new HttpError("Couldn't update post", 400));
         }
-        res.json(updatedPost)
 
+        res.json(updatedPost);
     } catch (error) {
-        return next(new HttpError(error))
+        return next(new HttpError(error.message || "Server error"));
     }
-}
-
+};
 
 
 
