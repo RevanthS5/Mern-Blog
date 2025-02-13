@@ -22,7 +22,9 @@ const UserProvider = ({ children }) => {
 
                 // ✅ Check if token is available for manual login users
                 const storedToken = localStorage.getItem("token");
-
+                console.log('storedToken', storedToken)
+                const userData = localStorage.getItem("user");
+                console.log('userData', userData)
                 if (storedToken) {
                     // ✅ Decode token to check expiration
                     const decoded = jwtDecode(storedToken);
