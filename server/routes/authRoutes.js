@@ -37,7 +37,8 @@ router.get(
             res.cookie("token", token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === "production",
-                sameSite: "Lax",
+                sameSite: "None", // ✅ Required for cross-origin cookies
+                domain: ".savornshare.vercel.app", //  Match frontend domain
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
 
@@ -96,7 +97,8 @@ router.post("/google", async (req, res) => {
         res.cookie("token", sessionToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production", // ✅ Secure in production
-            sameSite: "Lax",
+            sameSite: "None", //  Required for cross-origin cookies
+            domain: ".savornshare.vercel.app", //  Match frontend domain
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 Days
         });
 
@@ -119,7 +121,8 @@ router.get("/logout", async (req, res) => {
         res.cookie("token", "", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "Lax",
+            sameSite: "None", //  Required for cross-origin cookies
+            domain: ".savornshare.vercel.app", //  Match frontend domain
             expires: new Date(0), // ✅ Expire the cookie immediately
         });
 
