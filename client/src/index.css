@@ -144,6 +144,11 @@ img {
   gap: 0.8rem;
 }
 
+.existing-thumbnail{
+  width: 20%;
+  height: auto;
+}
+
 input, select, textarea {
   width: 100%;
   padding: 0.6rem 1rem;

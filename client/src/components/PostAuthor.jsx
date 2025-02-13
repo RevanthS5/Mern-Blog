@@ -1,47 +1,41 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import axios from 'axios'
-import ReactTimeAgo from "react-time-ago"
-import TimeAgo from 'javascript-time-ago'
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
 
-import en from 'javascript-time-ago/locale/en.json'
-import ru from 'javascript-time-ago/locale/ru.json'
-import { UserContext } from '../context/userContext'
+//  Replace with your Cloudinary default image URL
+const DEFAULT_AVATAR = "https://res.cloudinary.com/dj1sakhgo/image/upload/v1738779346/default-profile-pic_mbukpq.png";
 
-TimeAgo.addDefaultLocale(en)
-TimeAgo.addLocale(ru)
+const PostAuthor = ({ authorID, createdAt }) => {
+    const [author, setAuthor] = useState({});
+    const [profileImage, setProfileImage] = useState(DEFAULT_AVATAR);
 
-
-
-const PostAuthor = ({authorID, createdAt, imageDataTrail}) => {
-
-
-    const [author, setAuthor] = useState({})
-    const [pic, setPic] = useState('Loading')
     useEffect(() => {
         const getAuthor = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/${authorID}`)
-                setAuthor(response?.data)
-                setPic(`data:image/jpg;base64,${response?.data?.base64String}`)
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/${authorID}`);
+                setAuthor(response?.data);
+
+                //  Use Cloudinary profile image if available, otherwise fallback to default avatar
+                setProfileImage(response?.data?.profileImage || DEFAULT_AVATAR);
             } catch (error) {
-                console.log(error)
+                console.error("Error fetching author:", error);
+                setProfileImage(DEFAULT_AVATAR); // Fallback if API fails
             }
-        }
-        getAuthor();
-    }, [])
+        };
+        if (authorID) getAuthor();
+    }, [authorID]);
 
     return (
         <Link to={`/posts/users/${authorID}`} className="post__author">
             <div className="post__author-avatar">
-                {pic !== 'Loading' && <img src={pic} alt="Fetch" />}
+                <img src={profileImage} alt={author?.name || "User"} />
             </div>
             <div className="post__author-details">
-                <h5>By: {author?._doc?.name}</h5>
-                <small><ReactTimeAgo date={new Date(createdAt)} locale="en-US" /></small>
+                <h5>By: {author?.name || "Unknown"}</h5>
+                <small>{new Date(createdAt).toLocaleDateString()}</small>
             </div>
         </Link>
-    )
-}
+    );
+};
 
-export default PostAuthor
+export default PostAuthor;

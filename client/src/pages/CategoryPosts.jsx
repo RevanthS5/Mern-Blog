@@ -32,7 +32,7 @@ const CategoryPosts = () => {
         {posts.length ? <div className="container posts__container">
             {
                 posts.map((element) => {
-                    return <PostItem key={element._doc._id} postID={element._doc._id} thumbnail={element.base64String} category={element._doc.category} title={element._doc.title} description={element._doc.description} authorID={element._doc.creator} createdAt={element._doc.createdAt} thumbnailImage={element.base64String}/>
+                    return <PostItem key={element._id} postID={element._id} thumbnail={element.imageURL} category={element.category} title={element.title} description={element.description} authorID={element.creator} createdAt={element.createdAt} thumbnailImage={element.imageURL}/>
                 })
             }
         </div>  : <h2 className="center">No Posts found for {category}.</h2>}

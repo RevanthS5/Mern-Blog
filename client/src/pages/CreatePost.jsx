@@ -1,28 +1,26 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import axios from "axios"
+import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import { UserContext } from '../context/userContext';
 
 const CreatePost = () => {
-    const [title, setTitle] = useState('')
-    const [category, setCategory] = useState('Uncategorized')
-    const [description, setDescription] = useState('')
-    const [thumbnail, setThumbnail] = useState('')
-    const [thumbnailImage, setThumbnailImage] = useState('')
-    const [error, setError] = useState('')
-    const navigate = useNavigate()
+    const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('Uncategorized');
+    const [description, setDescription] = useState('');
+    const [thumbnail, setThumbnail] = useState(null); // ✅ Store file instead of Base64
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
     
-    const {currentUser} = useContext(UserContext)
-    const token = currentUser?.token;
-
-    // redirect to login page for any user to lands on this page without token
+    const { currentUser } = useContext(UserContext);
+    // const token = currentUser?.token;
+    const token = localStorage.getItem('token');
+    // Redirect to login page if no token
     useEffect(() => {
-        if(!token) {
-        navigate('/login')
+        if (!token) {
+            navigate('/login');
         }
-    }, [])
+    }, []);
 
     const modules = {
         toolbar: [
@@ -32,54 +30,47 @@ const CreatePost = () => {
             ['link', 'image'],
             ['clean']
         ],
-    }
+    };
 
     const formats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike', 'blockquote',
-    'list', 'bullet', 'indent',
-    'link', 'image'
-    ]
-    
+        'header',
+        'bold', 'italic', 'underline', 'strike', 'blockquote',
+        'list', 'bullet', 'indent',
+        'link', 'image'
+    ];
 
-    const POST_CATEGORIES = ["Deserts", "Healthy", "Indian", "Italian", "Vegan", "Easy", "Uncategorized", "Baking"]
+    const POST_CATEGORIES = ["Deserts", "Healthy", "Indian", "Italian", "Vegan", "Easy", "Uncategorized", "Baking"];
 
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const image = reader.result.split(",")[1];
-          setThumbnailImage(image);
-        };
-        reader.readAsDataURL(file);
-      };
-      
+        setThumbnail(file); // ✅ Store file directly
+    };
+
     const createPost = async (e) => {
         e.preventDefault();
 
         const postData = new FormData();
-        postData.set('title', title);
-        postData.set('category', category);
-        postData.set('description', description);
-        postData.set('thumbnail', thumbnail)
-        postData.set('thumbnailImage', thumbnailImage)
-        
+        postData.append('title', title);
+        postData.append('category', category);
+        postData.append('description', description);
+        postData.append('thumbnail', thumbnail); // ✅ Send file, not Base64
 
         try {
             const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/posts`, postData, {
-                withCredentials: true, headers: {Authorization: `Bearer ${token}`}
-            })
-            if(response.status == 201) {
-                return navigate('/')
+                withCredentials: true, 
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data' // ✅ Ensure correct encoding
+                }
+            });
+
+            if (response.status === 201) {
+                return navigate('/');
             }
         } catch (err) {
-            if(err.response.data.message === "TypeError: Cannot read properties of null (reading 'thumbnail')") {
-                setError("Please choose a thumbnail")
-            } else {
-                setError(err.response.data.message);
-            }
+            setError(err.response?.data?.message || "Something went wrong");
         }
-    }
+    };
 
     return (
         <section className="create-post">
@@ -89,17 +80,15 @@ const CreatePost = () => {
                 <form onSubmit={createPost} className='form create-post__form' encType="multipart/form-data">
                     <input type="text" placeholder='Title' value={title} onChange={e => setTitle(e.target.value)} autoFocus />
                     <select name='category' value={category} onChange={e => setCategory(e.target.value)}>
-                        {
-                            POST_CATEGORIES.map(cat => <option key={cat}>{cat}</option>)
-                        }
+                        {POST_CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
                     </select>
-                    <ReactQuill modules={modules} formats={formats} value={description} onChange={setDescription}></ReactQuill>
-                    <input type="file" onChange={e => {setThumbnail(e.target.files[0]); handleFileSelect(e)}} accept="png, jpg, jpeg" />
+                    <ReactQuill modules={modules} formats={formats} value={description} onChange={setDescription} />
+                    <input type="file" onChange={handleFileSelect} accept="image/png, image/jpg, image/jpeg" />
                     <button type="submit" className='btn primary'>Create</button>
                 </form>
             </div>
         </section>
-    )
-}
+    );
+};
 
-export default CreatePost
+export default CreatePost;

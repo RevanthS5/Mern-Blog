@@ -34,7 +34,7 @@ const AuthorPosts = () => {
 
     return <section className="user__posts">
         {posts.length ? <div className="container posts__container">
-            {posts.map(({_id:id, thumbnail, category, title, description, creator, createdAt}) => <PostItem key={id} postID={id} thumbnail={thumbnail} category={category} title={title} description={description} authorID={creator} createdAt={createdAt}/>)}
+            {posts.map(({_id:id, imageURL, category, title, description, creator, createdAt}) => <PostItem key={id} postID={id} thumbnail={imageURL} category={category} title={title} description={description} authorID={creator} createdAt={createdAt}/>)}
         </div> : <h2 className='center'>No posts found for this user</h2>}
     </section>
 }

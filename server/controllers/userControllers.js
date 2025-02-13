@@ -3,40 +3,61 @@ const jwt = require('jsonwebtoken')
 const { v4: uuid } = require("uuid")
 const fs = require('fs')
 const path = require('path')
+const cloudinary = require("cloudinary").v2;
+
 
 const User = require('../models/userModel');
 const HttpError = require('../models/errorModel');
+const authMiddleware = require("../middleware/authMiddleware");
 
 
 const registerUser = async (req, res, next) => {
     try {
-        const {name, email, password, password2, profilePicture} = req.body;
-        if(!name || !email || !password) {
-            return next(new HttpError("Fill in all fields.", 422))
+        const { name, email, password, password2 } = req.body;
+
+        if (!name || !email || !password) {
+            return next(new HttpError("Fill in all fields.", 422));
+        }
+
+        if (password !== password2) {
+            return next(new HttpError("Passwords do not match.", 422));
         }
 
         const newEmail = email.toLowerCase();
-        
-        const emailExists = await User.findOne({email: newEmail});
-        if(emailExists) {
-            return next(new HttpError("Email already exist", 422))
-        }
-        
-        if((password.trim()).length < 6) {
-            return next(new HttpError("Password should be at least 6 characters", 422))
+        const emailExists = await User.findOne({ email: newEmail });
+        if (emailExists) {
+            return next(new HttpError("Email already exists.", 422));
         }
 
-        if(password != password2) {
-            return next(new HttpError("Passwords do not match.", 422))
+        // ✅ Default Cloudinary Avatar
+        const DEFAULT_AVATAR = "https://res.cloudinary.com/dj1sakhgo/image/upload/v1738779346/default-profile-pic_mbukpq.png";
+
+        let profileImage = DEFAULT_AVATAR; // Assign default avatar
+
+        // ✅ If a profile picture is uploaded, upload it to Cloudinary
+        if (req.files && req.files.profilePicture) {
+            const { profilePicture } = req.files;
+            const uploadedImage = await cloudinary.uploader.upload(profilePicture.tempFilePath, {
+                folder: "profile_pictures",
+                public_id: `profile_${Date.now()}`,
+                overwrite: true,
+            });
+            profileImage = uploadedImage.secure_url;
         }
-        const newUser = await User.create({name, email: newEmail, password: password, profilePicture: profilePicture});
-        res.status(201).json(`New user ${newUser.email} registered.`);
+
+        // ✅ Create new user with the profile image
+        const newUser = await User.create({
+            name,
+            email: newEmail,
+            password,
+            profileImage, // ✅ Now profileImage is always saved
+        });
+
+        res.status(201).json({ message: `New user ${newUser.email} registered.` });
     } catch (error) {
-        return next(new HttpError("User registration failed.", 422))
+        return next(new HttpError("User registration failed.", 500));
     }
-}
-
-
+};
 
 
 // JWT generator
@@ -69,132 +90,204 @@ const loginUser = async (req, res, next) => {
 
 // for profile page
 const getUser = async (req, res, next) => {
-    const {id} = req.params;
     try {
+        const { id } = req.params;
         const user = await User.findById(id).select('-password');
-        if(!user) {
-            return next(new HttpError("User not found.", 404))
-        }
-        else{
-            const finalUserObj = base64decoder(user);
-            res.status(200).json(finalUserObj);
-        }
-    } catch (error) {
-        return next(new HttpError(error.message || "Something went wrong", 500));    }
-}
 
-const base64decoder = (userObj) => {
-    const base64String = userObj.profilePicture.toString("base64");
-    const user = {...userObj, base64String: base64String}
-    return user;
-}
+        if (!user) {
+            return next(new HttpError("User not found.", 404));
+        }
+
+        // Ensure `profileImage` exists (fallback to default Cloudinary avatar)
+        const DEFAULT_AVATAR = "https://res.cloudinary.com/dj1sakhgo/image/upload/v1738779346/default-profile-pic_mbukpq.pngg";
+        user.profileImage = user.profileImage || DEFAULT_AVATAR;
+
+        res.status(200).json(user);
+    } catch (error) {
+        return next(new HttpError("Something went wrong.", 500));
+    }
+};
+
+
 
 const logoutUser = (req, res, next) => {
-    res.cookie('token', '', {httpOnly: true, expires: new Date(0)})
-    res.status(200).json('User Logged out')
-}
+    console.log('Server hit here for logout')
+    try {
+        // ✅ Clear the JWT cookie
+        res.cookie('token', '', { 
+            httpOnly: true, 
+            secure: process.env.NODE_ENV === "production", // Use Secure flag in production
+            sameSite: "None", // Ensures proper handling across domains
+            expires: new Date(0) // Expires instantly
+        });
+
+        // ✅ Google OAuth: Destroy Session (if applicable)
+        if (req.session) {
+            req.session.destroy((err) => {
+                if (err) {
+                    console.error("Error destroying session:", err);
+                    return next(new HttpError("Logout failed.", 500));
+                }
+            });
+        }
+
+        // ✅ Return Success Response
+        res.status(200).json({ message: "User logged out successfully" });
+    } catch (error) {
+        return next(new HttpError("Logout failed.", 500));
+    }
+};
+
 
 // Change user profile picture
 const changeAvatar = async (req, res, next) => {
-    let fileName;
     try {
-        if(!req.files.avatar) {
-            return next(new HttpError("Something went wrong", 422))
-        }
-        // find user from database
-        const user = await User.findById(req.user.id);
-        if(user.avatar) {
-            fs.unlink(path.join(__dirname, '..', 'uploads', user.avatar), async (err) => {
-                if (err) {
-                    return next(new HttpError(err))
-                }})
+
+        if (!req.files || !req.files.profilePicture) {
+            return next(new HttpError("No image uploaded.", 422));
         }
 
-        const {avatar} = req.files;
-        // check file size
-        if(avatar.size > 500000) {
-            return next(new HttpError("Profile picture too big. File size should be under than 500kb"))
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return next(new HttpError("User not found.", 404));
         }
-        fileName = avatar.name;
-        let splittedFilename = fileName.split('.')
-        let newFilename = splittedFilename[0] + uuid() + "." + splittedFilename[splittedFilename.length - 1]
-        avatar.mv(path.join(__dirname, '..', 'uploads', newFilename), async (err) => {
-            if(err) {
-                return next(new HttpError(err))
-            }
-            const updatedAvatar = await User.findByIdAndUpdate(req.user.id, {avatar: newFilename}, {new: true})
-            if(!updatedAvatar) {
-                return next(new HttpError("Avatar couldn't be changed.", 422))
-            }
-            res.status(200).json(updatedAvatar)
-        })
+
+        const { profilePicture } = req.files;
+        if (profilePicture.size > 500000) {
+            return next(new HttpError("Profile picture too big. File size should be under 500KB", 422));
+        }
+
+        const uploadedImage = await cloudinary.uploader.upload(profilePicture.tempFilePath, {
+            folder: "profile_pictures",
+            public_id: `profile_${user._id}`,
+            overwrite: true,
+        });
+
+        user.profileImage = uploadedImage.secure_url;
+        await user.save();
+
+        res.status(200).json({ message: "Profile image updated", user });
     } catch (error) {
-        return next(new HttpError(error))
+        return next(new HttpError("Failed to update profile image.", 500));
     }
-}
+};
 
 // function to update current user details fromm User Profile
 const editUser = async (req, res, next) => {
     try {
-        const {name, email, currentPassword, newPassword, confirmNewPassword} = req.body;
-        if(!name || !email || !currentPassword || !newPassword || !confirmNewPassword) {
-            return next(new HttpError("Fill in all fields.", 422))
+        const { name, email, currentPassword, newPassword, confirmNewPassword } = req.body;
+        if (!name || !email || !currentPassword || !newPassword || !confirmNewPassword) {
+            return next(new HttpError("Fill in all fields.", 422));
         }
 
-        // get user from database
-        const user = await User.findById(req.user.id)
-        if(!user) {
-            return next(new HttpError("User not found.", 403))
+        // ✅ Get user from database
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return next(new HttpError("User not found.", 403));
         }
 
-        // make sure new email doesn't already exist
-        const emailExist = await User.findOne({email})
-        if(emailExist && (emailExist._id != req.user.id)) {
-            return next(new HttpError("Email already exist.", 422))
+        // ✅ Ensure new email doesn't already exist (case insensitive)
+        const newEmail = email.toLowerCase();
+        const emailExist = await User.findOne({ email: newEmail });
+        if (emailExist && emailExist._id.toString() !== req.user.id) {
+            return next(new HttpError("Email already exists.", 422));
         }
 
-        // compare current password to db password
-        // const validateUserPassword = await bcrypt.compare(currentPassword, user.password);
-        if(!validateUserPassword) {
-            return next(new HttpError("Invalid current password."))
+        // ✅ Compare current password (Plain Text Check)
+        if (user.password !== currentPassword) {
+            return next(new HttpError("Invalid current password.", 422));
         }
 
-        // compare new passwords
-        if(newPassword !== confirmNewPassword) {
-            return next(new HttpError("New passwords do not match.", 422))
+        // ✅ Compare new passwords
+        if (newPassword !== confirmNewPassword) {
+            return next(new HttpError("New passwords do not match.", 422));
         }
 
-        // hash new password
-        // const newSalt = await bcrypt.genSalt(10);
-        // const newHash = await bcrypt.hash(newPassword, newSalt)
-        
-        // update user info in database
-        const newInfo = await User.findByIdAndUpdate(req.user.id, {name, email, password: newHash}, {new: true})
-        res.status(200).json(newInfo)
+        let profileImage = user.profileImage; // Keep the current profile image by default
+
+        // ✅ If a new profile image is uploaded, update it in Cloudinary
+        if (req.files && req.files.profilePicture) {
+            const { profilePicture } = req.files;
+
+            // Upload new image to Cloudinary
+            const uploadedImage = await cloudinary.uploader.upload(profilePicture.tempFilePath, {
+                folder: "profile_pictures",
+                public_id: `profile_${user._id}`,
+                overwrite: true,
+            });
+
+            profileImage = uploadedImage.secure_url;
+
+            // ✅ If user had an existing Cloudinary image, delete the old one
+            if (user.profileImage && !user.profileImage.includes("default-avatar.png")) {
+                const oldImagePublicId = user.profileImage.split('/').slice(-1)[0].split('.')[0];
+                await cloudinary.uploader.destroy(`profile_pictures/${oldImagePublicId}`);
+            }
+        }
+
+        // ✅ Update user details in database
+        user.name = name;
+        user.email = newEmail;
+        user.password = newPassword;
+        user.profileImage = profileImage;
+        const updatedUser = await user.save();
+
+        if (!updatedUser) {
+            return next(new HttpError("Failed to update user details in database.", 500));
+        }
+
+        res.status(200).json({ message: "User updated successfully", user: updatedUser });
+
     } catch (error) {
-        return next(new HttpError(error))
+        return next(new HttpError(error.message || "Something went wrong.", 500));
     }
-}
-
-
-
-
-
-
+};
 
 
 
 
 const getAuthors = async (req, res, next) => {
     try {
-        const authors = await User.find().select('-password')
+        // Fetch all users and exclude passwords
+        const authors = await User.find().select('-password');
+        if (!authors || authors.length === 0) {
+            return next(new HttpError("No users found.", 404));
+        }
+
         res.json(authors);
     } catch (error) {
-        return next(new HttpError(error))
+        return next(new HttpError("Fetching users failed, please try again later.", 500));
     }
-}
+};
+
+const getMe = async (req, res, next) => {
+    try {
+        const token = req.cookies.token; // ✅ Read JWT from cookie
+
+        if (!token) {
+            return res.status(401).json({ message: "Unauthorized. No token provided." });
+        }
+
+        // ✅ Decode token & fetch user
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select("-password");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
+    } catch (error) {
+        return res.status(500).json({ message: "Server error" });
+    }
+};
 
 
 
 
-module.exports = {registerUser, loginUser, logoutUser, getUser, changeAvatar, editUser, getAuthors}
+
+
+
+
+
+module.exports = {registerUser, loginUser, logoutUser, getUser, changeAvatar, editUser, getAuthors, getMe}

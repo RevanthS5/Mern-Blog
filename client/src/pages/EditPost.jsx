@@ -1,29 +1,29 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import axios from "axios"
+import React, { useContext, useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from "axios";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { UserContext } from '../context/userContext';
 
 const EditPost = () => {
-    const [title, setTitle] = useState('')
-    const [category, setCategory] = useState('Uncategorized')
-    const [description, setDescription] = useState('')
-    const [thumbnail, setThumbnail] = useState('')
-    const [thumbnailImage, setThumbnailImage] = useState('')
-    const [error, setError] = useState('')
+    const [title, setTitle] = useState('');
+    const [category, setCategory] = useState('Uncategorized');
+    const [description, setDescription] = useState('');
+    const [thumbnail, setThumbnail] = useState(null); //  Store the new file
+    const [existingThumbnail, setExistingThumbnail] = useState(''); //  Store the current image URL
+    const [error, setError] = useState('');
 
-    const params = useParams()
-    const navigate = useNavigate()
-    const {currentUser} = useContext(UserContext)
-    const token = currentUser?.token;
+    const params = useParams();
+    const navigate = useNavigate();
+    const { currentUser } = useContext(UserContext);
+    const token = localStorage.getItem('token');
 
-    // redirect to login page for any user to lands on this page without token
+    // Redirect to login page if not authenticated
     useEffect(() => {
-        if(!token) {
-        navigate('/login')
+        if (!token) {
+            navigate('/login');
         }
-    }, [])
+    }, []);
 
     const modules = {
         toolbar: [
@@ -33,96 +33,100 @@ const EditPost = () => {
             ['link', 'image'],
             ['clean']
         ],
-    }
+    };
 
     const formats = [
-    'header',
-    'bold', 'italic', 'underline', 'strike', 'blockquote',
-    'list', 'bullet', 'indent',
-    'link', 'image'
-    ]
+        'header',
+        'bold', 'italic', 'underline', 'strike', 'blockquote',
+        'list', 'bullet', 'indent',
+        'link', 'image'
+    ];
 
-    const POST_CATEGORIES = ["Deserts", "Healthy", "Indian", "Italian", "Vegan", "Easy", "Uncategorized", "Baking"]
+    const POST_CATEGORIES = ["Deserts", "Healthy", "Indian", "Italian", "Vegan", "Easy", "Uncategorized", "Baking"];
 
-
+    //  Fetch Existing Post Data (including image URL)
     useEffect(() => {
         const getPost = async () => {
             try {
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/posts/${params.id}`)
-                setTitle(response?.data.title)
-                setDescription(response?.data.description)
-
+                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/posts/${params.id}`);
+                setTitle(response?.data.title);
+                setCategory(response?.data.category);
+                setDescription(response?.data.description);
+                setExistingThumbnail(response?.data.imageURL); // ✅ Store Cloudinary image URL
             } catch (error) {
-                console.log(error)
-                navigate('/login')
+                console.log(error);
+                navigate('/login');
             }
-    }
+        };
+        getPost();
+    }, []);
 
-    getPost();
-    }, [])
-
-
+    //  Handle File Selection (Remove Base64 Conversion)
     const handleFileSelect = (event) => {
         const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const image = reader.result.split(",")[1];
-          setThumbnailImage(image);
-        };
-        reader.readAsDataURL(file);
-      };
+        setThumbnail(file);
+    };
 
-    const EditPost = async (e) => {
+    //  Send Updated Post Data
+    const editPost = async (e) => {
         e.preventDefault();
 
         const postData = new FormData();
         postData.set('title', title);
         postData.set('category', category);
         postData.set('description', description);
-        postData.set('thumbnail', thumbnail);
-        postData.set('thumbnailImage', thumbnailImage)
 
+        //  Add only if a new file is selected
+        if (thumbnail) {
+            postData.set('thumbnail', thumbnail);
+        }
 
         try {
-            const response = await axios.patch(`${process.env.REACT_APP_BASE_URL}/posts/${params.id}`, postData, {withCredentials: true, headers: {Authorization: `Bearer ${token}`}})
-            if(response.status == 200) {
-                return navigate('/')
+            const response = await axios.patch(`${process.env.REACT_APP_BASE_URL}/posts/${params.id}`, postData, {
+                withCredentials: true, 
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.status === 200) {
+                return navigate('/');
             }
         } catch (err) {
-            console.log('error', error)
-            if(err.response.data.message === "TypeError: Cannot read properties of null (reading 'thumbnail')") {
-                setError("Please choose a thumbnail")
-            } else {
-                console.log('error detected :', err)
-                setError(err.response.data.message);
-            }
+            console.log('Error detected:', err);
+            setError(err.response?.data?.message || "Something went wrong");
         }
-    }
-
-    const changeCat = (newCat) => {
-        setCategory(newCat)
-    }
-    
+    };
 
     return (
         <section className="create-post">
             <div className="container create-post__container">
                 <h2>Edit Post</h2>
                 {error && <p className="form__error-message">{error}</p>}
-                <form onSubmit={EditPost} className='form create-post__form' encType="multipart/form-data">
+                <form onSubmit={editPost} className='form create-post__form' encType="multipart/form-data">
                     <input type="text" placeholder='Title' value={title} onChange={e => setTitle(e.target.value)} />
-                    <select name='category' value={category} onChange={e => changeCat(e.target.value)}>
-                        {
-                            POST_CATEGORIES.map(cat => <option key={cat}>{cat}</option>)
-                        }
+                    <select name='category' value={category} onChange={e => setCategory(e.target.value)}>
+                        {POST_CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
                     </select>
-                    <ReactQuill modules={modules} formats={formats} value={description} onChange={setDescription}></ReactQuill>
-                    <input type="file" onChange={e => {setThumbnail(e.target.files[0]); handleFileSelect(e)}} accept="png, jpg, jpeg" />
+                    <ReactQuill modules={modules} formats={formats} value={description} onChange={setDescription} />
+
+                    {/*  Show Existing Image */}
+                    {existingThumbnail && (
+                        <div className="existing-thumbnail">
+                            <p>Current Thumbnail:</p>
+                            <img src={existingThumbnail} alt="Current Post" style={{ maxWidth: "100%", height: "auto" }} />
+                        </div>
+                    )}
+
+                    {/*  Upload New Image */}
+                    <input type="file" onChange={handleFileSelect} accept="image/png, image/jpg, image/jpeg" />
+
                     <button type="submit" className='btn primary'>Update</button>
                 </form>
             </div>
         </section>
-    )
-}
+    );
+};
 
-export default EditPost
+export default EditPost;

@@ -1,24 +1,40 @@
-const jwt = require('jsonwebtoken')
-const User = require('../models/userModel')
-const HttpError = require('../models/errorModel')
+const jwt = require("jsonwebtoken");
+const User = require("../models/userModel");
+const HttpError = require("../models/errorModel");
 
 const authMiddleware = async (req, res, next) => {
-    const Bearer = req.headers.Authorization || req.headers.authorization
+    try {
+        let token;
 
-    if(Bearer && Bearer.startsWith('Bearer')) {
-        const token = Bearer.split(' ')[1]
-        jwt.verify(token, process.env.JWT_SECRET, (err, info) => {
-            if(err) {
-                return next(new HttpError("Unauthorized. Invalid token", 403))
-            }
+        // ✅ 1️⃣ Check for token in Cookies (Google OAuth)
+        if (req.cookies && req.cookies.token) {
+            token = req.cookies.token;
+        }
 
-            req.user = info;
-            next()
-        });
-    } else {
-        return next(new HttpError("Unauthorized. No token", 403))
+        // ✅ 2️⃣ Check for token in Authorization Header (Manual Login)
+        if (!token && req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+            token = req.headers.authorization.split(" ")[1];
+        }
+
+        // ✅ If no token found, return Unauthorized error
+        if (!token) {
+            return next(new HttpError("Unauthorized. No token provided", 401));
+        }
+
+        // ✅ Verify JWT Token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // ✅ Find User in Database
+        const user = await User.findById(decoded.id).select("-password"); // Don't return password
+        if (!user) {
+            return next(new HttpError("Unauthorized. User not found", 403));
+        }
+
+        req.user = user; // Attach user data to `req.user`
+        next();
+    } catch (error) {
+        return next(new HttpError("Unauthorized. Invalid token", 403));
     }
-}
-
+};
 
 module.exports = authMiddleware;
