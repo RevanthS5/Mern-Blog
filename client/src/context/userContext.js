@@ -17,12 +17,13 @@ const UserProvider = ({ children }) => {
                     withCredentials: true, // ✅ Important for sending session cookies
                 });
 
+                const storedToken = localStorage.getItem("token");
+                console.log('storedToken', storedToken)
+
                 const user = response.data; // ✅ Directly get user details
                 console.log("✅ User Data Fetched:", user);
 
-                // ✅ Check if token is available for manual login users
-                const storedToken = localStorage.getItem("token");
-                console.log('storedToken', storedToken)
+                // ✅ Check if token is available for manual login user
                 const userData = localStorage.getItem("user");
                 console.log('userData', userData)
                 if (storedToken) {
