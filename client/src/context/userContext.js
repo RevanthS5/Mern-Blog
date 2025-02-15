@@ -11,17 +11,18 @@ const UserProvider = ({ children }) => {
         console.log("🔵 Running useEffect: Checking user authentication...");
 
         const checkUser = async () => {
+
             try {
                 // ✅ Try getting the user from backend (Google login users rely on cookies)
-                const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/me`, {
-                    withCredentials: true, // ✅ Important for sending session cookies
-                });
+                // const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/me`, {
+                //     withCredentials: true, // ✅ Important for sending session cookies
+                // });
 
                 const storedToken = localStorage.getItem("token");
                 console.log('storedToken', storedToken)
 
-                const user = response.data; // ✅ Directly get user details
-                console.log("✅ User Data Fetched:", user);
+                // const user = response.data; // ✅ Directly get user details
+                // console.log("✅ User Data Fetched:", user);
 
                 // ✅ Check if token is available for manual login user
                 const userData = localStorage.getItem("user");
@@ -41,12 +42,12 @@ const UserProvider = ({ children }) => {
                 }
 
                 // ✅ Store in localStorage only if it's a manual login user
-                if (!user.isGoogleUser) {
-                    localStorage.setItem("user", JSON.stringify(user));
-                    localStorage.setItem("token", storedToken);
-                }
+                // if (!user.isGoogleUser) {
+                //     localStorage.setItem("user", JSON.stringify(user));
+                //     localStorage.setItem("token", storedToken);
+                // }
 
-                setCurrentUser(user);
+                setCurrentUser(userData);
             } catch (error) {
                 console.error("🔴 Error Fetching User:", error);
                 setCurrentUser(null);

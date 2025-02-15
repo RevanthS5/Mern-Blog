@@ -263,7 +263,7 @@ const getAuthors = async (req, res, next) => {
 const getMe = async (req, res, next) => {
     try {
         const token = req.cookies.token; // ✅ Read JWT from cookie
-
+        console.log('token', token)
         if (!token) {
             return res.status(401).json({ message: "Unauthorized. No token provided." });
         }
