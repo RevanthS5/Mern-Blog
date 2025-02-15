@@ -10,7 +10,13 @@ const Header = () => {
   const {currentUser} = useContext(UserContext)
   const [isNavShowing, setIsNavShowing] = useState(window.innerWidth > 800 ? true : false)
 
-  console.log('currentUser', currentUser);
+  console.log('currentUser plain', currentUser);
+  useEffect(() => {
+    console.log('currentUser empty dep', currentUser)
+  },[]);
+  useEffect(() => {
+    console.log('currentUser dep array', currentUser)
+  },[currentUser]);
   const closeNavHandler = () => {
       if(window.innerWidth < 800) {
         setIsNavShowing(false);
