@@ -61,7 +61,7 @@ const Login = () => {
             localStorage.setItem("token", response.data.token);
     
             // ✅ Redirect to homepage
-            window.location.href = "/";
+            navigate("/");
         } catch (error) {
             console.error("❌ Google Login Failed:", error);
         }

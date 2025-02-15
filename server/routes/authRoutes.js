@@ -104,7 +104,7 @@ router.post("/google", async (req, res) => {
 
         // ✅ Send User Data to Frontend
         res.json({ user, token: sessionToken });
-
+        console.log('token sent successfully ')
     } catch (error) {
         console.error("❌ Google Auth Error:", error);
         res.status(401).json({ message: "Google authentication failed" });
