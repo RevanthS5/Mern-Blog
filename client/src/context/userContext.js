@@ -4,29 +4,39 @@ import axios from "axios";
 
 export const UserContext = createContext();
 
+const extractUserData = (jsonString) => {
+    try {
+        // Parse the JSON string into an object
+        const data = JSON.parse(jsonString);
+        
+        // Extract only the required fields
+        const filteredData = {
+            _id: data._id,
+            name: data.name,
+            profileImage: data.profileImage,
+            posts: data.posts,
+            isGoogleUser: data.isGoogleUser
+        };
+
+        return filteredData;
+    } catch (error) {
+        console.error(" Invalid JSON string:", error);
+        return null;
+    }
+}
+
+
 const UserProvider = ({ children }) => {
     const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
-        console.log("🔵 Running useEffect: Checking user authentication...");
 
         const checkUser = async () => {
-
             try {
-                // ✅ Try getting the user from backend (Google login users rely on cookies)
-                // const response = await axios.get(`${process.env.REACT_APP_BASE_URL}/users/me`, {
-                //     withCredentials: true, // ✅ Important for sending session cookies
-                // });
-
                 const storedToken = localStorage.getItem("token");
-                console.log('storedToken', storedToken)
-
-                // const user = response.data; // ✅ Directly get user details
-                // console.log("✅ User Data Fetched:", user);
-
                 // ✅ Check if token is available for manual login user
                 const userData = localStorage.getItem("user");
-                console.log('userData', userData)
+                const result = extractUserData(userData);
                 if (storedToken) {
                     // ✅ Decode token to check expiration
                     const decoded = jwtDecode(storedToken);
@@ -40,14 +50,7 @@ const UserProvider = ({ children }) => {
                         return;
                     }
                 }
-
-                // ✅ Store in localStorage only if it's a manual login user
-                // if (!user.isGoogleUser) {
-                //     localStorage.setItem("user", JSON.stringify(user));
-                //     localStorage.setItem("token", storedToken);
-                // }
-
-                setCurrentUser(userData);
+                setCurrentUser(result);
             } catch (error) {
                 console.error("🔴 Error Fetching User:", error);
                 setCurrentUser(null);

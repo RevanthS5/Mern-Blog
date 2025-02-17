@@ -16,6 +16,17 @@ const Login = () => {
         setUserData(prevState => ({ ...prevState, [e.target.name]: e.target.value }));
     };
 
+    const convertObjectToJsonString = (userObject) => {
+        try {
+            // Convert the object to a JSON string
+            const jsonString = JSON.stringify(userObject);
+            return jsonString;
+        } catch (error) {
+            console.error("❌ Error converting object to JSON string:", error);
+            return null;
+        }
+    }
+
     // ✅ Login with Email & Password
     const loginUser = async (e) => {
         e.preventDefault();
@@ -25,16 +36,15 @@ const Login = () => {
                 withCredentials: true, // ✅ Allow backend to set cookies
             });
     
-            const { token, id, name } = response.data;
-            console.log('response.data', response.data)
-            
+            const { token, id, name } = response.data;            
             // ✅ Store token manually for non-Google users
             localStorage.setItem("token", token);
             const userObject =  {
                 '_id' : response.data.id,
                 'name' : response.data.name
             };
-            console.log('userObject', userObject)
+            const userString =  convertObjectToJsonString(userObject);
+            localStorage.setItem("user", userString);
             setCurrentUser(userObject);
             navigate("/");
         } catch (err) {
@@ -46,7 +56,6 @@ const Login = () => {
     // ✅ Google Login Success
     const handleGoogleLoginSuccess = async (credentialResponse) => {
         try {
-            console.log("✅ Google Login Success:", credentialResponse);
     
             // ✅ Send the Google token to backend for verification
             const response = await axios.post(
@@ -54,7 +63,6 @@ const Login = () => {
                 { token: credentialResponse.credential },
                 { withCredentials: true } // ✅ Ensures cookies are sent
             );
-            console.log('response.data', response.data)
             // ✅ Store user in context & localStorage
             setCurrentUser(response.data.user);
             localStorage.setItem("user", JSON.stringify(response.data.user));
